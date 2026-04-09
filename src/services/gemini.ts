@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { MOCK_SYSTEM_DATA } from "./mockData";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "MOCK_KEY" });
 
 export const PASB_SCHEMA = {
   type: Type.OBJECT,
@@ -103,6 +104,18 @@ export async function generatePersonalAISystem(profile: {
   user_output_intent: string;
   user_preferred_style: string;
 }): Promise<PASBResponse> {
+  const isMockMode = localStorage.getItem("PASB_MOCK_MODE") === "true";
+
+  if (isMockMode) {
+    // Artificial delay for realism
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return MOCK_SYSTEM_DATA;
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Missing GEMINI_API_KEY. Please set it in AI Studio or .env file.");
+  }
+
   const prompt = `
 Please build my Personal AI System based on the following profile:
 
@@ -113,20 +126,38 @@ Please build my Personal AI System based on the following profile:
 - Preferred Style (Checklists, Notion hub, voice, etc.): ${profile.user_preferred_style}
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
-    contents: prompt,
-    config: {
-      systemInstruction: SYSTEM_INSTRUCTION,
-      responseMimeType: "application/json",
-      responseSchema: PASB_SCHEMA,
-      temperature: 0.4,
-    },
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: PASB_SCHEMA,
+        temperature: 0.4,
+      },
+    });
 
-  if (!response.text) {
-    throw new Error("No response from Gemini");
+    if (!response.text) {
+      throw new Error("Empty response from AI engine.");
+    }
+
+    const data = JSON.parse(response.text) as PASBResponse;
+
+    // Basic validation of the parsed data
+    if (!data.system_name || !data.core_workflows || !Array.isArray(data.core_workflows)) {
+      throw new Error("AI returned malformed system data.");
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Gemini Generation Error:", error);
+    if (error.message?.includes("API_KEY_INVALID")) {
+      throw new Error("Invalid API Key. Please check your GEMINI_API_KEY.");
+    }
+    if (error.message?.includes("quota")) {
+      throw new Error("API quota exceeded. Try again later or switch to Mock Mode.");
+    }
+    throw new Error(error.message || "An unexpected error occurred during system generation.");
   }
-
-  return JSON.parse(response.text) as PASBResponse;
 }

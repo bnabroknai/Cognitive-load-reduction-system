@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -75,6 +74,9 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
   });
 
   const handleNext = () => {
+    const currentFieldValue = formData[STEPS[currentStep].field as keyof OnboardingData];
+    if (!currentFieldValue || isLoading) return;
+
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
@@ -83,13 +85,19 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
   };
 
   const handleBack = () => {
-    if (currentStep > 0) {
+    if (currentStep > 0 && !isLoading) {
       setCurrentStep(prev => prev - 1);
     }
   };
 
   const updateField = (field: keyof OnboardingData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      handleNext();
+    }
   };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
@@ -136,7 +144,12 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
                   className="min-h-[150px] text-lg resize-none focus-visible:ring-primary/50"
                   value={formData[STEPS[currentStep].field as keyof OnboardingData]}
                   onChange={(e) => updateField(STEPS[currentStep].field as keyof OnboardingData, e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  autoFocus
                 />
+                <p className="text-[10px] text-muted-foreground text-right uppercase tracking-wider">
+                  Press <kbd className="font-sans px-1 rounded bg-white/10">⌘ + Enter</kbd> to continue
+                </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between pt-6">

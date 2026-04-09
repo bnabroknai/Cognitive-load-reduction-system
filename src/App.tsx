@@ -3,18 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OnboardingWizard, OnboardingData } from "@/components/OnboardingWizard";
 import { Dashboard } from "@/components/Dashboard";
 import { generatePersonalAISystem, PASBResponse } from "@/services/gemini";
 import { motion, AnimatePresence } from "motion/react";
-import { BrainCircuit } from "lucide-react";
+import { BrainCircuit, FlaskConical } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function App() {
   const [view, setView] = useState<"onboarding" | "dashboard">("onboarding");
   const [isLoading, setIsLoading] = useState(false);
   const [systemData, setSystemData] = useState<PASBResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isMockMode, setIsMockMode] = useState(localStorage.getItem("PASB_MOCK_MODE") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("PASB_MOCK_MODE", isMockMode.toString());
+  }, [isMockMode]);
 
   const handleCompleteOnboarding = async (data: OnboardingData) => {
     setIsLoading(true);
@@ -53,14 +60,27 @@ export default function App() {
             </div>
             <span className="font-bold tracking-tight text-lg">PASB <span className="text-muted-foreground font-normal">v1.0</span></span>
           </div>
-          {view === "dashboard" && (
-            <button 
-              onClick={handleReset}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              New System
-            </button>
-          )}
+
+          <div className="flex items-center gap-6">
+            <div className="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+              <FlaskConical className="w-3.5 h-3.5 text-amber-500" />
+              <Label htmlFor="mock-mode" className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground cursor-pointer">Mock Mode</Label>
+              <Switch
+                id="mock-mode"
+                checked={isMockMode}
+                onCheckedChange={setIsMockMode}
+                className="scale-75"
+              />
+            </div>
+            {view === "dashboard" && (
+              <button
+                onClick={handleReset}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                New System
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 

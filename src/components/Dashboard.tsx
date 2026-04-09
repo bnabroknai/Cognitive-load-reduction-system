@@ -1,23 +1,27 @@
 import { motion } from "motion/react";
 import { PASBResponse } from "@/services/gemini";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { 
-  Clock, 
-  Zap, 
-  ShieldCheck, 
-  ArrowRight, 
   Download, 
   RefreshCcw, 
-  BookOpen, 
-  TrendingUp,
   Workflow,
-  Calendar
+  Zap,
+  Clock,
+  TrendingUp,
+  ShieldCheck,
+  Calendar,
+  ArrowRight,
+  BookOpen,
+  FileText,
+  Copy,
+  Check
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 interface DashboardProps {
   data: PASBResponse;
@@ -25,9 +29,45 @@ interface DashboardProps {
 }
 
 export function Dashboard({ data, onReset }: DashboardProps) {
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const exportMarkdown = () => {
+    let markdown = `# ${data.system_name}\n\n`;
+    markdown += `## Overview\n${data.overview}\n\n`;
+    markdown += `## Core Workflows\n`;
+    data.core_workflows.forEach((w, i) => {
+      markdown += `### ${i + 1}. ${w.name}\n`;
+      markdown += `- **Trigger:** ${w.trigger}\n`;
+      markdown += `- **Tools:** ${w.tools_used}\n`;
+      markdown += `- **Expected Time:** ${w.expected_time}\n`;
+      markdown += `- **Action:**\n\`\`\`\n${w.exact_prompts_or_steps}\n\`\`\`\n\n`;
+      markdown += `- **Automation Idea:** ${w.automation_ideas}\n\n`;
+    });
+    markdown += `## Strategy\n`;
+    markdown += `### Memory & Review Ritual\n${data.memory_and_review}\n\n`;
+    markdown += `### Monetization Loop\n${data.monetization_or_output_loop}\n\n`;
+    markdown += `## System Safeguards\n`;
+    data.safeguards.forEach(s => markdown += `- ${s}\n`);
+    markdown += `\n## 30-Day Onramp\n${data.thirty_day_onramp}\n\n`;
+    markdown += `## Expansion Notes\n${data.expansion_notes}`;
+
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${data.system_name.replace(/\s+/g, "_")}_PASB.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopied(index);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
-      {/* Hero Section */}
+    <div className="pb-24">
       <header className="relative overflow-hidden border-b border-border/40 bg-card/30 backdrop-blur-md">
         <div className="container mx-auto px-4 py-16 relative z-10">
           <motion.div
@@ -45,10 +85,14 @@ export function Dashboard({ data, onReset }: DashboardProps) {
             <p className="text-xl text-muted-foreground leading-relaxed">
               {data.overview}
             </p>
-            <div className="flex gap-4 mt-8">
+            <div className="flex flex-wrap gap-4 mt-8">
               <Button onClick={() => window.print()} variant="outline" className="gap-2">
                 <Download className="w-4 h-4" />
                 Export PDF
+              </Button>
+              <Button onClick={exportMarkdown} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5">
+                <FileText className="w-4 h-4" />
+                Export Markdown
               </Button>
               <Button onClick={onReset} variant="ghost" className="gap-2 text-muted-foreground">
                 <RefreshCcw className="w-4 h-4" />
@@ -112,8 +156,17 @@ export function Dashboard({ data, onReset }: DashboardProps) {
                         <p className="text-sm">{workflow.tools_used}</p>
                       </div>
                       <Separator className="bg-border/50" />
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Action</h4>
+                      <div className="space-y-2 relative group">
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Action</h4>
+                          <button
+                            onClick={() => handleCopy(workflow.exact_prompts_or_steps, index)}
+                            className="text-muted-foreground hover:text-primary transition-colors p-1"
+                            title="Copy prompt"
+                          >
+                            {copied === index ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
                         <ScrollArea className="h-32 rounded-md border border-border/30 bg-muted/30 p-3">
                           <code className="text-xs leading-relaxed whitespace-pre-wrap">
                             {workflow.exact_prompts_or_steps}
