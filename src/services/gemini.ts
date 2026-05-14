@@ -96,6 +96,8 @@ export interface PASBResponse {
   expansion_notes: string;
 }
 
+const cache = new Map<string, PASBResponse>();
+
 export async function generatePersonalAISystem(profile: {
   user_goals: string;
   user_tools_and_pains: string;
@@ -103,6 +105,11 @@ export async function generatePersonalAISystem(profile: {
   user_output_intent: string;
   user_preferred_style: string;
 }): Promise<PASBResponse> {
+  const cacheKey = JSON.stringify(profile);
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey)!;
+  }
+
   const prompt = `
 Please build my Personal AI System based on the following profile:
 
@@ -128,5 +135,7 @@ Please build my Personal AI System based on the following profile:
     throw new Error("No response from Gemini");
   }
 
-  return JSON.parse(response.text) as PASBResponse;
+  const result = JSON.parse(response.text) as PASBResponse;
+  cache.set(cacheKey, result);
+  return result;
 }
