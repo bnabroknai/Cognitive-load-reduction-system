@@ -93,7 +93,8 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
   };
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
-  const StepIcon = STEPS[currentStep].icon;
+  const currentStepData = STEPS[currentStep];
+  const StepIcon = currentStepData.icon;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
@@ -119,23 +120,23 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
                 <StepIcon className="w-6 h-6 text-primary" />
               </div>
               <CardTitle className="text-2xl font-bold tracking-tight">
-                {STEPS[currentStep].title}
+                {currentStepData.title}
               </CardTitle>
               <CardDescription className="text-base">
-                {STEPS[currentStep].description}
+                {currentStepData.description}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <Label htmlFor={STEPS[currentStep].id} className="sr-only">
-                  {STEPS[currentStep].title}
+                <Label htmlFor={currentStepData.id} className="sr-only">
+                  {currentStepData.title}
                 </Label>
                 <Textarea
-                  id={STEPS[currentStep].id}
-                  placeholder={STEPS[currentStep].placeholder}
+                  id={currentStepData.id}
+                  placeholder={currentStepData.placeholder}
                   className="min-h-[150px] text-lg resize-none focus-visible:ring-primary/50"
-                  value={formData[STEPS[currentStep].field as keyof OnboardingData]}
-                  onChange={(e) => updateField(STEPS[currentStep].field as keyof OnboardingData, e.target.value)}
+                  value={formData[currentStepData.field as keyof OnboardingData]}
+                  onChange={(e) => updateField(currentStepData.field as keyof OnboardingData, e.target.value)}
                 />
               </div>
             </CardContent>
@@ -151,7 +152,7 @@ export function OnboardingWizard({ onComplete, isLoading }: OnboardingWizardProp
               </Button>
               <Button
                 onClick={handleNext}
-                disabled={!formData[STEPS[currentStep].field as keyof OnboardingData] || isLoading}
+                disabled={!formData[currentStepData.field as keyof OnboardingData] || isLoading}
                 className="gap-2 px-8"
               >
                 {currentStep === STEPS.length - 1 ? (
